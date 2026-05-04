@@ -36,7 +36,10 @@
         interviews, discover career paths, and land your dream job.
       </p>
 
-      <a href="#resources" class="btn-main">Start Your Journey</a>
+      <div class="hero-actions">
+        <a href="#resources" class="btn-main">Start Your Journey</a>
+        <button id="openContactBtn" class="btn-secondary">Contact Us</button>
+      </div>
 
       <div class="stats-container">
         <div class="stat-box">
@@ -386,7 +389,6 @@
           <h4>Email Us</h4>
           <p>nuradhadakshina1234@gmail.com</p>
           <p>dulajdjhansa@gmail.com</p>
-          <p>charukasan156@gmail.com</p>
         </div>
 
         <div class="contact-info-card">
@@ -398,6 +400,44 @@
         </div>
       </div>
     </section>
+
+    <div class="modal-overlay hidden" id="contactModal" aria-hidden="true">
+      <div class="modal-window" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle">
+        <button type="button" class="modal-close" id="closeContactBtn" aria-label="Close contact form">&times;</button>
+        <div class="modal-header">
+          <h3 id="contactModalTitle">Contact Us</h3>
+          <p>Fill in your details and choose the recipient email address to send your message.</p>
+        </div>
+        <form id="contactForm" class="contact-form" novalidate>
+          <div class="form-group">
+            <label for="contactName">Name</label>
+            <input id="contactName" name="name" type="text" placeholder="Your full name" required minlength="2" />
+          </div>
+          <div class="form-group">
+            <label for="contactPhone">Phone Number</label>
+            <input id="contactPhone" name="phone" type="tel" placeholder="+94 70 123 4567" required />
+          </div>
+          <div class="form-group">
+            <label for="contactEmail">Email</label>
+            <input id="contactEmail" name="email" type="email" placeholder="you@example.com" required />
+          </div>
+          <div class="form-group">
+            <label for="recipientEmail">Send to</label>
+            <select id="recipientEmail" name="recipientEmail" required>
+              <option value="">Choose an email address</option>
+              <option value="nuradhadakshina1234@gmail.com">nuradhadakshina1234@gmail.com</option>
+              <option value="dulajdjhansa@gmail.com">dulajdjhansa@gmail.com</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="contactMessage">Comment / Message</label>
+            <textarea id="contactMessage" name="message" rows="5" placeholder="Write your message here..." required minlength="10"></textarea>
+          </div>
+          <div class="form-status" id="contactFormStatus" aria-live="polite"></div>
+          <button type="submit" class="btn-submit btn-main">Send Message</button>
+        </form>
+      </div>
+    </div>
 
     <footer>
       <div class="footer-grid">
@@ -469,6 +509,95 @@
             link.classList.add('active');
           }
         });
+      });
+
+      const contactModal = document.getElementById('contactModal');
+      const openContactBtn = document.getElementById('openContactBtn');
+      const closeContactBtn = document.getElementById('closeContactBtn');
+      const contactForm = document.getElementById('contactForm');
+      const contactFormStatus = document.getElementById('contactFormStatus');
+
+      const showModal = () => {
+        contactModal.classList.remove('hidden');
+        contactModal.setAttribute('aria-hidden', 'false');
+      };
+
+      const hideModal = () => {
+        contactModal.classList.add('hidden');
+        contactModal.setAttribute('aria-hidden', 'true');
+        contactFormStatus.textContent = '';
+        contactForm.reset();
+      };
+
+      openContactBtn.addEventListener('click', showModal);
+      closeContactBtn.addEventListener('click', hideModal);
+      contactModal.addEventListener('click', (event) => {
+        if (event.target === contactModal) {
+          hideModal();
+        }
+      });
+
+      const validateEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      const validatePhone = (value) => /^\+?\d[\d\s-]{7,}$/.test(value);
+
+      contactForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        contactFormStatus.textContent = '';
+
+        const name = contactForm.name.value.trim();
+        const phone = contactForm.phone.value.trim();
+        const email = contactForm.email.value.trim();
+        const recipientEmail = contactForm.recipientEmail.value;
+        const message = contactForm.message.value.trim();
+
+        if (!name || name.length < 2) {
+          contactFormStatus.textContent = 'Please enter your name.';
+          return;
+        }
+        if (!validatePhone(phone)) {
+          contactFormStatus.textContent = 'Please enter a valid phone number.';
+          return;
+        }
+        if (!validateEmail(email)) {
+          contactFormStatus.textContent = 'Please enter a valid email address.';
+          return;
+        }
+        if (!recipientEmail) {
+          contactFormStatus.textContent = 'Please choose a recipient email address.';
+          return;
+        }
+        if (!message || message.length < 10) {
+          contactFormStatus.textContent = 'Please enter a message with at least 10 characters.';
+          return;
+        }
+
+        const submitButton = contactForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Sending...';
+
+        try {
+          const response = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, email, recipientEmail, message })
+          });
+
+          const result = await response.json();
+          if (response.ok) {
+            contactFormStatus.textContent = result.message || 'Message sent successfully.';
+            contactFormStatus.classList.add('success');
+            contactForm.reset();
+          } else {
+            contactFormStatus.textContent = result.error || 'Unable to send your message. Please try again later.';
+            contactFormStatus.classList.remove('success');
+          }
+        } catch (error) {
+          contactFormStatus.textContent = 'Unable to send your message. Please try again later.';
+          contactFormStatus.classList.remove('success');
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Send Message';
+        }
       });
     </script>
   </body>
